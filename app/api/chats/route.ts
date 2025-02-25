@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server"; // Adjust based on your auth provider
 import { prisma } from "@/lib/prisma"; // Adjust based on your Prisma client
 
+export const dynamic = "force-static";
+export const revalidate = 60; // Adjust the revalidate time as needed
+
 export async function POST(request: Request) {
   // Await auth() to resolve headers() error
   const authResult = await auth();
