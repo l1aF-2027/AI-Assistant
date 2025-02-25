@@ -4,7 +4,7 @@ import {
 import "./globals.css";
 
 export const metadata = {
-  title: "AI Assistant",
+  title: "GemAi",
   icons:
   {
     icon: 'web.ico',

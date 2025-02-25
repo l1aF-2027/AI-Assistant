@@ -29,8 +29,8 @@ export default function ExampleChat() {
           <span
             className={`inline-block p-2 rounded-lg ${
               message.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground"
+                ? "bg-black text-white"
+                : "bg-gray-200 text-black"
             }`}
           >
             {message.role === "assistant" && index === 1 ? (
