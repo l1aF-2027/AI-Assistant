@@ -15,8 +15,6 @@ import { HiOutlineUpload } from "react-icons/hi";
 import { MdSend, MdClose } from "react-icons/md";
 import { Loader2 } from "lucide-react";
 import remarkBreaks from "remark-breaks";
-import mammoth from "mammoth";
-import * as XLSX from "xlsx";
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
@@ -101,6 +99,7 @@ const ChatBox = forwardRef(({ selectedChatSession }: ChatBoxProps, ref) => {
       };
 
       setMessages((prev) => [...prev, userMessage]);
+      setInput(""); // Clear the input field immediately
 
       try {
         const parts: any[] = [{ text: userMessage.content }];
@@ -137,7 +136,6 @@ const ChatBox = forwardRef(({ selectedChatSession }: ChatBoxProps, ref) => {
         ]);
       } finally {
         setIsLoading(false);
-        setInput("");
         setImage(null);
         setFileContent(null);
         setFileName(null);
@@ -371,7 +369,7 @@ const ChatBox = forwardRef(({ selectedChatSession }: ChatBoxProps, ref) => {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message or upload a file..."
+            placeholder="Type your message ..."
             className="w-full p-3 pr-16 border rounded-lg resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-gray-500 custom-scrollbar"
             onKeyPress={handleKeyPress}
           />
