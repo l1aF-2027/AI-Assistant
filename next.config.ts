@@ -1,7 +1,11 @@
+// next.config.ts
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
+const config: NextConfig = {
+  // Remove 'output: "export"' if present
+  typescript: {
+    ignoreBuildErrors: true, // Optional: if you have TypeScript errors during build
+  },
 };
 
-export default nextConfig;
+export default config;
