@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Assistant using Gemini API
 
-## Getting Started
+The AI Assistant website is an intelligent platform that provides an AI-powered virtual assistant with a wide range of features to support users in their daily tasks.
 
-First, run the development server:
+[![Open website](https://img.shields.io/badge/website-000000?style=for-the-badge&logo=About.me&logoColor=white)](https://gemai-ai-assistant.vercel.app/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Introduction
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This project was built to provide a smooth, safe, and efficient experience using the AI Assistant. The system integrates various cutting-edge technologies—from database management to handling user requests—to optimize performance and ensure security for the entire application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Main Features
+- **AI Virtual Assistant:** By using Gemini 2.0 Flash as the main model, the AI Assistant can quickly process and respond to user requests.
+- **Secure Login Management:** Clerk is integrated to manage logins and securely authenticate users.
+- **Efficient Data Storage:** Prisma along with Neon is used to connect to and manage the database, ensuring that data is stored reliably and can be easily scaled.
+- **User-Friendly Interface:** The user interface is designed to be intuitive and easy to use, providing an optimal experience for all users.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Technologies Used
 
-## Learn More
+- **[Prisma](https://www.prisma.io/):** A powerful ORM that facilitates easy and efficient interaction with the database.
+- **[Neon](https://neon.tech/):** A modern database storage solution with flexible scalability.
+- **[Clerk](https://clerk.com/):** A secure platform for managing logins and authenticating users.
+- **[Gemini 2.0 Flash](https://ai.google.dev/gemini-api/docs/models/gemini?authuser=1#gemini-2.0-flash):** An advanced AI model responsible for natural language processing and intelligent responses.
 
-To learn more about Next.js, take a look at the following resources:
+## Installation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Clone the Repository:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   git clone https://github.com/l1aF-2027/AI-Assistant.git
+   cd ai-assistant
+   ```
 
-## Deploy on Vercel
+2. **Install the Necessary Packages:**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Set Up Environment Variables:**
+
+   Create a `.env.local` file in the root directory and add the required configuration variables, for example:
+
+   ```env
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your--public-clerk-publishable-api-key"
+   CLERK_SECRET_KEY="your-clerk-api-key"
+   NEXT_PUBLIC_GEMINI_API_KEY="your-gemini-api-key"
+   ```
+   
+   Create a `.env` file in the root directory and add database variable, for example:
+   ```env
+   DATABASE_URL="postgresql://user:password@host:port/dbname"
+   ```
+4. **Run the Project:**
+
+   ```bash
+   npm run dev
+   ```
+
+## Environment Configuration
+
+- **DATABASE_URL:** The connection string for the Neon database.
+- **CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:** API key for integrating Clerk's login management service.
+- **NEXT_PUBLIC_GEMINI_API_KEY:** API key for the Gemini 2.0 Flash model.
+
+Make sure these environment variables are correctly configured for the system to run smoothly.
+
+## Usage Instructions
+
+- Visit the URL: `http://localhost:3000` (or the configured address) to start experiencing the AI Assistant.
+- Sign up and log in via Clerk to access personalized features.
+- Interact with the AI Assistant through the chat interface or other integrated functionalities.
+
+## Contributions
+
+All contributions, suggestions, and bug reports are welcome. Please create a Pull Request or open an Issue on GitHub to help improve the project.
