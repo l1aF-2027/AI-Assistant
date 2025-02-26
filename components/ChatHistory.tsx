@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-
+import "./ChatHistory.css"
 export default function ChatHistory({
   refreshTrigger,
   onSelectChatSession,
