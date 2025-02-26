@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import "./ChatHistory.css"; // Import CSS file
 
 export default function ChatHistory({
   refreshTrigger,
@@ -41,6 +42,14 @@ export default function ChatHistory({
       <h2 className="text-lg font-semibold mb-4 ml-[20px] md:ml-0 rounded-3xl">
         Chat History
       </h2>
+      {isLoading ? (
+        <div className="loading-dots">
+          <div>Loading</div>
+          <span>.</span>
+          <span>.</span>
+          <span>.</span>
+        </div>
+      ) : (
         <ul>
           {chatSessions.map((session) => (
             <li key={session.id} className="mb-2">
@@ -60,6 +69,7 @@ export default function ChatHistory({
             </li>
           ))}
         </ul>
+      )}
     </motion.div>
   );
 }
