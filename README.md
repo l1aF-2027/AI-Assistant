@@ -4,6 +4,11 @@ The AI Assistant website is an intelligent platform that provides an AI-powered 
 
 [![Open website](https://img.shields.io/badge/website-000000?style=for-the-badge&logo=About.me&logoColor=white)](https://gemai-ai-assistant.vercel.app/)
 
+
+https://github.com/user-attachments/assets/a737a84c-0c86-4ad1-90da-15c754fa1792
+
+
+
 ## Introduction
 
 This project was built to provide a smooth, safe, and efficient experience using the AI Assistant. The system integrates various cutting-edge technologies—from database management to handling user requests—to optimize performance and ensure security for the entire application.
