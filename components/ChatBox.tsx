@@ -92,7 +92,7 @@ const ChatBox = forwardRef(({ selectedChatSession }: ChatBoxProps, ref) => {
                 ?.split(".")
                 .pop()}\n${fileContent}\n\`\`\``
             : "",
-        ].join("\n-\n\n-"),
+        ].join("                                  \n\n-\n\n-"),
         image: image || undefined,
         fileContent: fileContent || undefined,
         fileName: fileName || undefined,
@@ -301,7 +301,10 @@ const ChatBox = forwardRef(({ selectedChatSession }: ChatBoxProps, ref) => {
                 remarkPlugins={[remarkBreaks]}
               >
                 {message.fileContent
-                  ? message.content.split("\n-\n\n-").slice(0, -1).join("\n")
+                  ? message.content
+                      .split("                                  \n\n-\n\n-")
+                      .slice(0, -1)
+                      .join("\n")
                   : message.content}
               </ReactMarkdown>
               {message.fileContent && (

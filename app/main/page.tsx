@@ -21,6 +21,9 @@ export default function Home() {
   const [isHovered, setIsHovered] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedChatSession, setSelectedChatSession] = useState<any>(null);
+  const [currentChatCreatedAt, setCurrentChatCreatedAt] = useState<
+    string | null
+  >(null);
   const chatBoxRef = useRef<any>(null);
 
   // Lắng nghe resize để cập nhật isMobile
@@ -67,6 +70,7 @@ export default function Home() {
             messages: formattedMessages,
             title,
             oldChatSessionId: selectedChatSession?.id,
+            createdAt: currentChatCreatedAt,
           }),
         });
         if (!response.ok) throw new Error("Failed to save chat");
@@ -105,6 +109,7 @@ export default function Home() {
             messages: formattedMessages,
             title,
             oldChatSessionId: selectedChatSession?.id,
+            createdAt: currentChatCreatedAt,
           }),
         });
         if (!response.ok) throw new Error("Failed to save chat");
@@ -124,6 +129,7 @@ export default function Home() {
       await saveCurrentChatSession();
     }
     setSelectedChatSession(session);
+    setCurrentChatCreatedAt(session.createdAt);
   };
 
   useEffect(() => {

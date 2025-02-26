@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import "./ChatHistory.css"; // Import CSS file
 
 export default function ChatHistory({
   refreshTrigger,
@@ -12,6 +11,10 @@ export default function ChatHistory({
 }) {
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentChat, setCurrentChat] = useState<{
+    content: string;
+    createdAt: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchChatSessions();
@@ -31,6 +34,20 @@ export default function ChatHistory({
     }
   };
 
+  const handleSelectChatSession = (session: any) => {
+    if (
+      !currentChat ||
+      session.content !== currentChat.content ||
+      session.createdAt !== currentChat.createdAt
+    ) {
+      setCurrentChat({
+        content: session.content,
+        createdAt: session.createdAt,
+      });
+      onSelectChatSession(session);
+    }
+  };
+
   return (
     <motion.div
       initial={{ x: "-100%", opacity: 0 }} // Bắt đầu từ ngoài màn hình bên trái
@@ -44,7 +61,6 @@ export default function ChatHistory({
       </h2>
       {isLoading ? (
         <div className="loading-dots">
-          <div>Loading</div>
           <span>.</span>
           <span>.</span>
           <span>.</span>
@@ -55,7 +71,7 @@ export default function ChatHistory({
             <li key={session.id} className="mb-2">
               <button
                 className="w-full text-left p-2 hover:bg-gray-100 rounded"
-                onClick={() => onSelectChatSession(session)}
+                onClick={() => handleSelectChatSession(session)}
               >
                 <div className="flex justify-between">
                   <span className="max-w-[200px] truncate">
