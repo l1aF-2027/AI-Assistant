@@ -21,9 +21,7 @@ export default function Home() {
   const [isHovered, setIsHovered] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedChatSession, setSelectedChatSession] = useState<any>(null);
-  const [currentChatCreatedAt, setCurrentChatCreatedAt] = useState<
-    string | null
-  >(null);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const chatBoxRef = useRef<any>(null);
 
   // Lắng nghe resize để cập nhật isMobile
@@ -45,14 +43,18 @@ export default function Home() {
     setIsHovered(false);
   };
 
-  const handleNewChat = async () => {
-    const currentMessages = chatBoxRef.current.getMessages();
-    if (currentMessages.length > 0) {
-      const title = currentMessages[0].content.substring(0, 50) + "...";
-      const formattedMessages = currentMessages.map((msg: any) => ({
-        mess: msg.mess,
-        content: msg.content,
+  const handleNewChat = () => {
+    setSelectedChatSession(null);
+    setCurrentChatId(null);
+    chatBoxRef.current.resetChat();
+  };
+
+  const handleChatCreated = async (messages: any[]) => {
+    if (messages.length > 0) {
+      const title = messages[0].content.substring(0, 50) + "...";
+      const formattedMessages = messages.map((msg) => ({
         role: msg.role,
+        content: msg.content,
         file: msg.image
           ? {
               content: msg.image.split(",")[1], // Base64 data
@@ -69,83 +71,57 @@ export default function Home() {
           body: JSON.stringify({
             messages: formattedMessages,
             title,
-            oldChatSessionId: selectedChatSession?.id,
-            createdAt: currentChatCreatedAt,
           }),
         });
+
         if (!response.ok) throw new Error("Failed to save chat");
-        chatBoxRef.current.resetChat();
+
+        const data = await response.json();
+        setCurrentChatId(data.chatSession.id);
         setRefreshTrigger((prev) => prev + 1); // Trigger ChatHistory refresh
       } catch (error) {
-        console.error("Error saving chat:", error);
+        console.error("Error creating chat:", error);
       }
-    } else {
-      chatBoxRef.current.resetChat(); // Reset even if no messages
     }
   };
 
-  const saveCurrentChatSession = async () => {
-    const currentMessages = chatBoxRef.current.getMessages();
-    if (currentMessages.length > 0) {
-      const title = currentMessages[0].content.substring(0, 50) + "...";
-      const formattedMessages = currentMessages.map((msg: any) => ({
-        mess: msg.mess,
-        content: msg.content,
+  const handleChatUpdated = async (messages: any[]) => {
+    if (messages.length > 0 && currentChatId) {
+      const title = messages[0].content.substring(0, 50) + "...";
+      const formattedMessages = messages.map((msg) => ({
         role: msg.role,
+        content: msg.content,
         file: msg.image
           ? {
-              content: msg.image.split(",")[1], // Base64 data
+              content: msg.image.split(",")[1],
               name: "image.jpg",
-              type: msg.image.split(";")[0].split(":")[1], // e.g., "image/jpeg"
+              type: msg.image.split(";")[0].split(":")[1],
             }
           : null,
       }));
 
       try {
-        const response = await fetch("/api/chats", {
-          method: "POST",
+        const response = await fetch(`/api/chats/${currentChatId}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             messages: formattedMessages,
             title,
-            oldChatSessionId: selectedChatSession?.id,
-            createdAt: currentChatCreatedAt,
           }),
         });
-        if (!response.ok) throw new Error("Failed to save chat");
-        chatBoxRef.current.resetChat();
+
+        if (!response.ok) throw new Error("Failed to update chat");
         setRefreshTrigger((prev) => prev + 1); // Trigger ChatHistory refresh
       } catch (error) {
-        console.error("Error saving chat:", error);
+        console.error("Error updating chat:", error);
       }
-    } else {
-      chatBoxRef.current.resetChat(); // Reset even if no messages
     }
   };
 
-  const handleSelectChatSession = async (session: any) => {
-    const currentMessages = chatBoxRef.current.getMessages();
-    if (currentMessages.length > 0) {
-      await saveCurrentChatSession();
-    }
+  const handleSelectChatSession = (session: any) => {
     setSelectedChatSession(session);
-    setCurrentChatCreatedAt(session.createdAt);
+    setCurrentChatId(session.id);
   };
-
-  useEffect(() => {
-    const handleBeforeUnload = async () => {
-      const currentMessages = chatBoxRef.current.getMessages();
-      if (selectedChatSession === null && currentMessages.length > 0) {
-        await saveCurrentChatSession();
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [selectedChatSession]);
 
   return (
     <div className="min-h-screen p-6 bg-gray-100 relative">
@@ -224,6 +200,8 @@ export default function Home() {
               <ChatBox
                 ref={chatBoxRef}
                 selectedChatSession={selectedChatSession}
+                onChatCreated={handleChatCreated}
+                onChatUpdated={handleChatUpdated}
               />
             </div>
           )}
