@@ -53,7 +53,7 @@ export default function ChatHistory({
       initial={{ x: "-100%", opacity: 0 }} // Bắt đầu từ ngoài màn hình bên trái
       animate={{ x: "0%", opacity: 1 }} // Trượt vào vị trí ban đầu và hiện dần
       exit={{ x: "-100%", opacity: 0 }} // Nếu cần hiệu ứng khi tắt
-      transition={{ duration: 0.3 }} // Điều chỉnh tốc độ hiệu ứng
+      transition={{ duration: 0.2 }} // Điều chỉnh tốc độ hiệu ứng
       className="p-4"
     >
       <h2 className="text-lg font-semibold mb-4 ml-[20px] md:ml-0 rounded-3xl">

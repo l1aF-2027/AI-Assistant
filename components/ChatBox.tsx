@@ -29,12 +29,35 @@ const model = genAI.getGenerativeModel({
   },
 });
 
+// Add this at the top level
+let pdfjsLib = null;
+
+// Preload PDF.js
+if (typeof window !== "undefined") {
+  import("pdfjs-dist")
+    .then((module) => {
+      pdfjsLib = module;
+      // Configure worker
+      import("pdfjs-dist/build/pdf.worker.min.mjs")
+        .then((worker) => {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
+        })
+        .catch((err) => {
+          console.error("Failed to load PDF.js worker:", err);
+        });
+    })
+    .catch((err) => {
+      console.error("Failed to load PDF.js library:", err);
+    });
+}
+
 interface Message {
   role: string;
   content: string;
   image?: string;
   fileContent?: string;
   fileName?: string;
+  fileType?: string;
 }
 
 interface ChatBoxProps {
@@ -53,6 +76,7 @@ const ChatBox = forwardRef(
     const [image, setImage] = useState<string | null>(null);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
+    const [fileType, setFileType] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [chatCreated, setChatCreated] = useState(false);
 
@@ -106,6 +130,7 @@ const ChatBox = forwardRef(
           image: image || undefined,
           fileContent: fileContent || undefined,
           fileName: fileName || undefined,
+          fileType: fileType || undefined,
         };
 
         setMessages((prev) => [...prev, userMessage]);
@@ -169,7 +194,34 @@ const ChatBox = forwardRef(
           setImage(null);
           setFileContent(null);
           setFileName(null);
+          setFileType(null);
         }
+      }
+    };
+
+    // Function to extract text from PDF using a fallback approach
+    const extractPdfText = async (arrayBuffer) => {
+      try {
+        // Check if pdfjsLib is loaded
+        if (!pdfjsLib) {
+          throw new Error("PDF.js library not loaded");
+        }
+
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+
+        let textContent = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const strings = content.items.map((item) => item.str);
+          textContent += strings.join(" ") + "\n";
+        }
+
+        return textContent;
+      } catch (err) {
+        console.error("Error extracting PDF text:", err);
+        throw err;
       }
     };
 
@@ -198,35 +250,103 @@ const ChatBox = forwardRef(
           reader.onload = (event) => {
             setFileContent(event.target?.result as string);
             setFileName(file.name);
+            setFileType(file.type);
           };
           reader.readAsText(file);
+        }
+        // Handle PDF files
+        else if (fileExtension === "pdf") {
+          reader.onload = async (event) => {
+            try {
+              // Use our preloaded PDF.js instance
+              const arrayBuffer = event.target?.result as ArrayBuffer;
+              const textContent = await extractPdfText(arrayBuffer);
+
+              setFileContent(
+                textContent || "PDF content could not be extracted fully."
+              );
+              setFileName(file.name);
+              setFileType("application/pdf");
+            } catch (err) {
+              console.error("PDF extraction error:", err);
+
+              // Use a simple fallback message
+              setFileContent(
+                "PDF content could not be extracted. Please copy and paste the content manually."
+              );
+              setFileName(file.name);
+              setFileType("application/pdf");
+
+              alert(
+                "Could not extract PDF content completely. The file might be encrypted, scanned, or contain complex formatting."
+              );
+            }
+          };
+          reader.readAsArrayBuffer(file);
         }
         // Handle Word documents (.docx)
         else if (fileExtension === "docx") {
           reader.onload = async (event) => {
-            const mammoth = await import("mammoth");
-            mammoth
-              .extractRawText({
+            try {
+              const mammoth = await import("mammoth");
+              const result = await mammoth.extractRawText({
                 arrayBuffer: event.target?.result as ArrayBuffer,
-              })
-              .then((result) => {
-                setFileContent(result.value);
-                setFileName(file.name);
-              })
-              .catch((err) => console.error("Error parsing .docx:", err));
+              });
+              setFileContent(
+                result.value ||
+                  "Word document content could not be extracted fully."
+              );
+              setFileName(file.name);
+              setFileType(
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              );
+            } catch (err) {
+              console.error("Error parsing .docx:", err);
+              setFileContent(
+                "Word document content could not be extracted. Please copy and paste the content manually."
+              );
+              setFileName(file.name);
+              setFileType(
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              );
+              alert(
+                "Could not extract Word document content. The file might have complex formatting."
+              );
+            }
           };
           reader.readAsArrayBuffer(file);
         }
         // Handle Excel files (.xlsx)
         else if (fileExtension === "xlsx") {
           reader.onload = async (event) => {
-            const XLSX = await import("xlsx");
-            const workbook = XLSX.read(event.target?.result, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const data = XLSX.utils.sheet_to_csv(sheet); // Convert Excel to CSV format
-            setFileContent(data);
-            setFileName(file.name);
+            try {
+              const XLSX = await import("xlsx");
+              const workbook = XLSX.read(event.target?.result, {
+                type: "array",
+              });
+              const sheetName = workbook.SheetNames[0];
+              const sheet = workbook.Sheets[sheetName];
+              const data = XLSX.utils.sheet_to_csv(sheet); // Convert Excel to CSV format
+              setFileContent(
+                data || "Excel data could not be extracted fully."
+              );
+              setFileName(file.name);
+              setFileType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              );
+            } catch (err) {
+              console.error("Error loading XLSX library or parsing file:", err);
+              setFileContent(
+                "Excel data could not be extracted. Please copy and paste the content manually."
+              );
+              setFileName(file.name);
+              setFileType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              );
+              alert(
+                "Could not extract Excel data. The file might have complex formatting."
+              );
+            }
           };
           reader.readAsArrayBuffer(file);
         }
@@ -238,7 +358,7 @@ const ChatBox = forwardRef(
           reader.readAsDataURL(file);
         } else {
           alert(
-            "Only text, code, Word (.docx), Excel (.xlsx), and images are allowed!"
+            "Only text, code, PDF, Word (.docx), Excel (.xlsx), and images are allowed!"
           );
         }
       }
@@ -247,6 +367,7 @@ const ChatBox = forwardRef(
     const handleRemoveFile = () => {
       setFileContent(null);
       setFileName(null);
+      setFileType(null);
     };
 
     const handleRemoveImage = () => {
@@ -294,6 +415,25 @@ const ChatBox = forwardRef(
       },
     }));
 
+    // Get appropriate icon/emoji for file type
+    const getFileIcon = (fileType: string | null, fileName: string | null) => {
+      if (!fileType || !fileName) return "📄";
+
+      const extension = fileName.split(".").pop()?.toLowerCase();
+
+      if (fileType.startsWith("image/")) return "🖼️";
+      if (extension === "pdf") return "📕";
+      if (extension === "docx") return "📝";
+      if (extension === "xlsx") return "📊";
+
+      // Default for text/code files
+      if (["js", "ts", "jsx", "tsx"].includes(extension!)) return "🟨";
+      if (["py"].includes(extension!)) return "🐍";
+      if (["html", "css"].includes(extension!)) return "🌐";
+
+      return "📄";
+    };
+
     return (
       <div className="flex flex-col h-full bg-gray-50 rounded-3xl">
         <div
@@ -339,17 +479,12 @@ const ChatBox = forwardRef(
                     : message.content}
                 </ReactMarkdown>
                 {message.fileContent && (
-                  <a
-                    href={`data:text/plain;charset=utf-8,${encodeURIComponent(
-                      message.fileContent
-                    )}`}
-                    download={message.fileName}
-                    className="text-white"
-                  >
-                    <span className="text-sm font-medium">
-                      📄 {message.fileName}
+                  <div className="mt-2 p-2 bg-gray-700 rounded-md">
+                    <span className="text-sm font-medium text-white flex items-center">
+                      {getFileIcon(message.fileType || null, message.fileName)}
+                      <span className="ml-2">{message.fileName}</span>
                     </span>
-                  </a>
+                  </div>
                 )}
               </div>
             </div>
@@ -385,8 +520,10 @@ const ChatBox = forwardRef(
               )}
               {fileContent && (
                 <div className="bg-gray-100 p-2 rounded-lg flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-medium">📄 {fileName}</span>
+                  <div className="flex items-center">
+                    <span className="text-sm font-medium">
+                      {getFileIcon(fileType, fileName)} {fileName}
+                    </span>
                   </div>
                   <button
                     onClick={handleRemoveFile}
@@ -450,5 +587,7 @@ const ChatBox = forwardRef(
     );
   }
 );
+
+ChatBox.displayName = "ChatBox";
 
 export default ChatBox;
