@@ -104,20 +104,23 @@ export async function GET(request: Request) {
     return new NextResponse("Failed to fetch chat sessions", { status: 500 });
   }
 }
-
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request) {
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = params.id;
+  // Extract ID from the URL
+  const url = new URL(request.url);
+  const chatId = url.searchParams.get("id");
+
+  if (!chatId) {
+    return new NextResponse("Chat ID is required", { status: 400 });
+  }
+
   const { messages, title } = await request.json();
 
   try {
-    // Kiểm tra chat session có tồn tại và thuộc về user hiện tại
+    // Rest of your code remains the same
     const existingChat = await prisma.chatSession.findFirst({
       where: {
         id: chatId,
@@ -132,48 +135,15 @@ export async function PUT(
       return new NextResponse("Chat not found", { status: 404 });
     }
 
-    // Kiểm tra xem nội dung chat có thay đổi không
+    // Check if chat content has changed
     const hasChanged = hasMessagesChanged(existingChat.messages, messages);
 
-    // Nếu nội dung không thay đổi, không cập nhật updatedAt
-    if (!hasChanged) {
-      // Xóa tất cả tin nhắn cũ
-      await prisma.chatMessage.deleteMany({
-        where: { sessionId: chatId },
-      });
-
-      // Tạo tin nhắn mới
-      for (const msg of messages) {
-        await prisma.chatMessage.create({
-          data: {
-            role: msg.role,
-            content: msg.content,
-            fileContent: msg.file?.content || null,
-            fileName: msg.file?.name || null,
-            fileType: msg.file?.type || null,
-            sessionId: chatId,
-          },
-        });
-      }
-
-      // Cập nhật title nếu cần
-      if (title !== existingChat.title) {
-        await prisma.chatSession.update({
-          where: { id: chatId },
-          data: { title },
-        });
-      }
-
-      return NextResponse.json({ success: true, updated: false });
-    }
-
-    // Nếu nội dung thay đổi, cập nhật updatedAt
-    // Xóa tất cả tin nhắn cũ
+    // Delete all old messages
     await prisma.chatMessage.deleteMany({
       where: { sessionId: chatId },
     });
 
-    // Tạo tin nhắn mới
+    // Create new messages
     for (const msg of messages) {
       await prisma.chatMessage.create({
         data: {
@@ -187,16 +157,16 @@ export async function PUT(
       });
     }
 
-    // Cập nhật title và updatedAt
+    // Update title and updatedAt if content changed
     await prisma.chatSession.update({
       where: { id: chatId },
       data: {
         title,
-        updatedAt: new Date(),
+        ...(hasChanged ? { updatedAt: new Date() } : {}),
       },
     });
 
-    return NextResponse.json({ success: true, updated: true });
+    return NextResponse.json({ success: true, updated: hasChanged });
   } catch (error) {
     console.error("Error updating chat:", error);
     return new NextResponse("Failed to update chat", { status: 500 });
