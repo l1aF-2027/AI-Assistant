@@ -12,7 +12,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { HiOutlineUpload } from "react-icons/hi";
-import { MdSend, MdClose } from "react-icons/md";
+import { MdSend, MdClose, MdDownload } from "react-icons/md";
 import { Loader2 } from "lucide-react";
 import remarkBreaks from "remark-breaks";
 
@@ -58,6 +58,7 @@ interface Message {
   fileContent?: string;
   fileName?: string;
   fileType?: string;
+  fileUrl?: string;
 }
 
 interface ChatBoxProps {
@@ -86,23 +87,35 @@ const ChatBox = forwardRef(
     const chatSessionRef = useRef<any>(null);
 
     useEffect(() => {
-      // Initialize chat session with empty history or load selected chat session
       if (selectedChatSession) {
-        setMessages(selectedChatSession.messages);
+        // Sử dụng optional chaining và fallback
+        const messages = selectedChatSession.messages || [];
+        const formattedMessages = messages.map((msg: any) => ({
+          role: msg.role,
+          content: msg.content,
+          fileContent: msg.fileContent || undefined,
+          fileName: msg.fileName || undefined,
+          fileType: msg.fileType || undefined,
+        }));
+
+        setMessages(formattedMessages);
         setChatCreated(true);
+
         chatSessionRef.current = model.startChat({
-          history: selectedChatSession.messages.map((msg: Message) => ({
+          history: formattedMessages.map((msg: Message) => ({
             role: msg.role,
             parts: [{ text: msg.content }],
           })),
         });
       } else {
-        chatSessionRef.current = model.startChat({
-          history: [],
-        });
+        chatSessionRef.current = model.startChat({ history: [] });
         setMessages([]);
         setChatCreated(false);
       }
+      setFileContent(null);
+      setFileName(null);
+      setFileType(null);
+      setImage(null);
     }, [selectedChatSession]);
 
     // useEffect để tự động cuộn xuống dưới khi messages thay đổi
@@ -126,7 +139,9 @@ const ChatBox = forwardRef(
                   ?.split(".")
                   .pop()}\n${fileContent}\n\`\`\``
               : "",
-          ].join("                                  \n\n-\n\n-"),
+          ].join(
+            "                                                                        \n\n\n\n"
+          ),
           image: image || undefined,
           fileContent: fileContent || undefined,
           fileName: fileName || undefined,
@@ -236,6 +251,9 @@ const ChatBox = forwardRef(
           file.type.startsWith("text/") ||
           [
             "js",
+            "jsx",
+            "tsx",
+            "prisma",
             "ts",
             "py",
             "java",
@@ -415,23 +433,105 @@ const ChatBox = forwardRef(
       },
     }));
 
-    // Get appropriate icon/emoji for file type
     const getFileIcon = (fileType: string | null, fileName: string | null) => {
-      if (!fileType || !fileName) return "📄";
+      if (!fileType || !fileName)
+        return <img src="/icons/default.png" alt="Default Icon" width="24" />;
 
       const extension = fileName.split(".").pop()?.toLowerCase();
 
-      if (fileType.startsWith("image/")) return "🖼️";
-      if (extension === "pdf") return "📕";
-      if (extension === "docx") return "📝";
-      if (extension === "xlsx") return "📊";
+      if (fileType.startsWith("image/")) {
+        switch (extension) {
+          case "jpg":
+          case "jpeg":
+            return <img src="/icons/jpg.png" alt="JPG Icon" width="24" />;
+          case "png":
+            return <img src="/icons/png.png" alt="PNG Icon" width="24" />;
+          case "gif":
+            return <img src="/icons/gif.png" alt="GIF Icon" width="24" />;
+          case "bmp":
+            return <img src="/icons/bmp.png" alt="BMP Icon" width="24" />;
+          case "svg":
+            return <img src="/icons/svg.png" alt="SVG Icon" width="24" />;
+          case "tiff":
+          case "tif":
+            return (
+              <img
+                src="/icons/tiff.png"
+                alt="TIFF Icon"
+                width="24"
+                height="24"
+              />
+            );
+          case "ico":
+            return <img src="/icons/ico.png" alt="ICO Icon" width="24" />;
+          default:
+            return (
+              <img
+                src="/icons/image.png"
+                alt="Image Icon"
+                width="24"
+                height="24"
+              />
+            );
+        }
+      }
+      if (extension === "pdf")
+        return <img src="/icons/pdf.png" alt="PDF Icon" width="24" />;
+      if (extension === "docx")
+        return <img src="/icons/docx.png" alt="DOCX Icon" width="24" />;
+      if (extension === "doc")
+        return <img src="/icons/doc.png" alt="DOC Icon" width="24" />;
+      if (extension === "xlsx")
+        return <img src="/icons/xlsx.png" alt="XLSX Icon" width="24" />;
+      if (extension === "xls")
+        return <img src="/icons/xls.png" alt="XLS Icon" width="24" />;
 
       // Default for text/code files
-      if (["js", "ts", "jsx", "tsx"].includes(extension!)) return "🟨";
-      if (["py"].includes(extension!)) return "🐍";
-      if (["html", "css"].includes(extension!)) return "🌐";
+      if (["js", "ts", "jsx", "tsx"].includes(extension!))
+        return <img src="/icons/code.png" alt="Code Icon" width="24" />;
+      if (["py"].includes(extension!))
+        return <img src="/icons/python.png" alt="Python Icon" width="24" />;
+      if (["css"].includes(extension!))
+        return <img src="/icons/css.png" alt="CSS Icon" width="24" />;
+      if (["txt"].includes(extension!))
+        return <img src="/icons/txt.png" alt="TXT Icon" width="24" />;
+      if (extension === "html")
+        return <img src="/icons/html.png" alt="HTML Icon" width="24" />;
 
-      return "📄";
+      return <img src="/icons/default.png" alt="Default Icon" width="24" />;
+    };
+
+    // Function to download file content
+    const handleDownloadFile = (
+      fileContent: string,
+      fileName: string,
+      fileType: string
+    ) => {
+      // Create blob
+      const blob = new Blob([fileContent], { type: fileType });
+
+      // Create download link
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // Function to download image
+    const handleDownloadImage = (
+      imageData: string,
+      fileName: string = "image.jpg"
+    ) => {
+      const link = document.createElement("a");
+      link.href = imageData;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     };
 
     return (
@@ -455,6 +555,18 @@ const ChatBox = forwardRef(
                       alt="Uploaded"
                       className="max-h-40 rounded-lg object-contain"
                     />
+                    <button
+                      onClick={() =>
+                        handleDownloadImage(
+                          message.image!,
+                          `image_${index}.jpg`
+                        )
+                      }
+                      className="absolute bottom-2 right-2 p-1 bg-gray-800 bg-opacity-70 text-white rounded-full hover:bg-opacity-90"
+                      title="Download image"
+                    >
+                      <MdDownload size={16} />
+                    </button>
                   </div>
                 </div>
               )}
@@ -473,17 +585,36 @@ const ChatBox = forwardRef(
                 >
                   {message.fileContent
                     ? message.content
-                        .split("                                  \n\n-\n\n-")
+                        .split(
+                          "                                                                        \n\n\n\n"
+                        )
                         .slice(0, -1)
                         .join("\n")
                     : message.content}
                 </ReactMarkdown>
                 {message.fileContent && (
-                  <div className="mt-2 p-2 bg-gray-700 rounded-md">
-                    <span className="text-sm font-medium text-white flex items-center">
-                      {getFileIcon(message.fileType || null, message.fileName)}
-                      <span className="ml-2">{message.fileName}</span>
-                    </span>
+                  <div className="mt-2 p-2 hover:bg-gray-700 rounded-md">
+                    <div className="flex justify-between items-center">
+                      <button
+                        onClick={() =>
+                          handleDownloadFile(
+                            message.fileContent!,
+                            message.fileName || "file.txt",
+                            message.fileType || "text/plain"
+                          )
+                        }
+                        className="text-white hover:text-gray-300 transition-colors"
+                        title="Download file"
+                      >
+                        <span className="text-sm font-medium text-white flex items-center">
+                          {getFileIcon(
+                            message.fileType || null,
+                            message.fileName
+                          )}
+                          <span className="ml-2">{message.fileName}</span>
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -521,8 +652,9 @@ const ChatBox = forwardRef(
               {fileContent && (
                 <div className="bg-gray-100 p-2 rounded-lg flex items-center justify-between">
                   <div className="flex items-center">
-                    <span className="text-sm font-medium">
-                      {getFileIcon(fileType, fileName)} {fileName}
+                    <span className="text-sm font-medium flex items-center">
+                      {getFileIcon(fileType, fileName)}
+                      <span className="ml-2">{fileName}</span>
                     </span>
                   </div>
                   <button
@@ -547,7 +679,7 @@ const ChatBox = forwardRef(
             <div className="absolute right-1 bottom-4 flex gap-2">
               <input
                 type="file"
-                accept=".txt,.js,.ts,.py,.java,.c,.cpp,.html,.css,.md,image/*,.docx,.pdf,.xlsx,.xls"
+                accept=".txt,.js,.ts,.py,.java,.c,.cpp,.html,.css,.md,image/*,.docx,.pdf,.xlsx,.xls,.tsx,.ts,.js,.jsx,.prisma"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"

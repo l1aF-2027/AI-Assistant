@@ -57,9 +57,15 @@ export default function Home() {
         content: msg.content,
         file: msg.image
           ? {
-              content: msg.image.split(",")[1], // Base64 data
+              content: msg.image.split(",")[1],
               name: "image.jpg",
-              type: msg.image.split(";")[0].split(":")[1], // e.g., "image/jpeg"
+              type: msg.image.split(";")[0].split(":")[1],
+            }
+          : msg.fileContent
+          ? {
+              content: msg.fileContent,
+              name: msg.fileName || "file",
+              type: msg.fileType || "text/plain",
             }
           : null,
       }));
@@ -96,6 +102,12 @@ export default function Home() {
               content: msg.image.split(",")[1],
               name: "image.jpg",
               type: msg.image.split(";")[0].split(":")[1],
+            }
+          : msg.fileContent
+          ? {
+              content: msg.fileContent,
+              name: msg.fileName || "file",
+              type: msg.fileType || "text/plain",
             }
           : null,
       }));

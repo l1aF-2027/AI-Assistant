@@ -103,7 +103,7 @@ export async function GET(request: Request) {
             content: true,
             fileName: true,
             fileType: true,
-            fileContent: true, // Thêm fileContent vào response
+            // We won't include fileContent in the initial load to reduce payload size
           },
         },
       },

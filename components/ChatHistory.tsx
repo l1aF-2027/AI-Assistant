@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import "./ChatHistory.css"
+import "./ChatHistory.css";
+
 export default function ChatHistory({
   refreshTrigger,
   onSelectChatSession,
@@ -11,10 +12,6 @@ export default function ChatHistory({
 }) {
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentChat, setCurrentChat] = useState<{
-    content: string;
-    createdAt: string;
-  } | null>(null);
 
   useEffect(() => {
     fetchChatSessions();
@@ -26,34 +23,23 @@ export default function ChatHistory({
       const response = await fetch("/api/chats");
       if (!response.ok) throw new Error("Failed to fetch chat sessions");
       const data = await response.json();
+
+      // Chỉ lấy dữ liệu cơ bản và không fetch lại từng session
       setChatSessions(data);
     } catch (error) {
       console.error("Error fetching chat sessions:", error);
+      setChatSessions([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSelectChatSession = (session: any) => {
-    if (
-      !currentChat ||
-      session.content !== currentChat.content ||
-      session.createdAt !== currentChat.createdAt
-    ) {
-      setCurrentChat({
-        content: session.content,
-        createdAt: session.createdAt,
-      });
-      onSelectChatSession(session);
-    }
-  };
-
   return (
     <motion.div
-      initial={{ x: "-100%", opacity: 0 }} // Bắt đầu từ ngoài màn hình bên trái
-      animate={{ x: "0%", opacity: 1 }} // Trượt vào vị trí ban đầu và hiện dần
-      exit={{ x: "-100%", opacity: 0 }} // Nếu cần hiệu ứng khi tắt
-      transition={{ duration: 0.2 }} // Điều chỉnh tốc độ hiệu ứng
+      initial={{ x: "-100%", opacity: 0 }}
+      animate={{ x: "0%", opacity: 1 }}
+      exit={{ x: "-100%", opacity: 0 }}
+      transition={{ duration: 0.2 }}
       className="p-4"
     >
       <h2 className="text-lg font-semibold mb-4 ml-[20px] md:ml-0 rounded-3xl">
@@ -71,7 +57,7 @@ export default function ChatHistory({
             <li key={session.id} className="mb-2">
               <button
                 className="w-full text-left p-2 hover:bg-gray-100 rounded"
-                onClick={() => handleSelectChatSession(session)}
+                onClick={() => onSelectChatSession(session)}
               >
                 <div className="flex justify-between">
                   <span className="max-w-[200px] truncate">
