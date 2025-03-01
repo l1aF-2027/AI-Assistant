@@ -95,18 +95,7 @@ export async function GET(request: Request) {
   try {
     const chatSessions = await prisma.chatSession.findMany({
       where: { userId },
-      include: {
-        messages: {
-          select: {
-            id: true,
-            role: true,
-            content: true,
-            fileName: true,
-            fileType: true,
-            // We won't include fileContent in the initial load to reduce payload size
-          },
-        },
-      },
+      include: { messages: true },
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(chatSessions);
@@ -115,8 +104,76 @@ export async function GET(request: Request) {
     return new NextResponse("Failed to fetch chat sessions", { status: 500 });
   }
 }
+export async function PUT(request: Request) {
+  const authResult = await auth();
+  const { userId } = authResult;
+  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-// Function to compare old and new messages
+  // Extract ID from the URL
+  const url = new URL(request.url);
+  const chatId = url.searchParams.get("id");
+
+  if (!chatId) {
+    return new NextResponse("Chat ID is required", { status: 400 });
+  }
+
+  const { messages, title } = await request.json();
+
+  try {
+    // Rest of your code remains the same
+    const existingChat = await prisma.chatSession.findFirst({
+      where: {
+        id: chatId,
+        userId,
+      },
+      include: {
+        messages: true,
+      },
+    });
+
+    if (!existingChat) {
+      return new NextResponse("Chat not found", { status: 404 });
+    }
+
+    // Check if chat content has changed
+    const hasChanged = hasMessagesChanged(existingChat.messages, messages);
+
+    // Delete all old messages
+    await prisma.chatMessage.deleteMany({
+      where: { sessionId: chatId },
+    });
+
+    // Create new messages
+    for (const msg of messages) {
+      await prisma.chatMessage.create({
+        data: {
+          role: msg.role,
+          content: msg.content,
+          fileContent: msg.file?.content || null,
+          fileName: msg.file?.name || null,
+          fileType: msg.file?.type || null,
+          sessionId: chatId,
+        },
+      });
+    }
+
+    // Update title and updatedAt if content changed
+    await prisma.chatSession.update({
+      where: { id: chatId },
+      data: {
+        title,
+        ...(hasChanged ? { updatedAt: new Date() } : {}),
+      },
+    });
+
+    return NextResponse.json({ success: true, updated: hasChanged });
+  } catch (error) {
+    console.error("Error updating chat:", error);
+    return new NextResponse("Failed to update chat", { status: 500 });
+  }
+}
+
+// Hàm so sánh tin nhắn cũ và mới
 function hasMessagesChanged(
   existingMessages: any[],
   newMessages: any[]
