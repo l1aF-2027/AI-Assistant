@@ -5,13 +5,13 @@ import { prisma } from "@/lib/prisma";
 // Update the type definition to match Next.js App Router's expected format
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = params.id;
+  const chatId = context.params.id;
   const { messages, title } = await request.json();
 
   try {
@@ -71,13 +71,13 @@ export async function PUT(
 // Also update the DELETE handler to be consistent
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = params.id;
+  const chatId = context.params.id;
 
   try {
     // Check if chat session exists and belongs to current user
