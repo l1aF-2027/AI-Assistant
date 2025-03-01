@@ -140,7 +140,17 @@ export default function Home() {
       <div className="mx-auto max-w-7xl">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-semibold p-2">AI Assistant 🥏</h1>
+            <h1 className="text-3xl font-semibold p-2 flex items-center">
+              <img
+                src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Comet.png"
+                alt="Comet"
+                width="60"
+                height="60"
+                className="p-2"
+              />
+              Comet
+            </h1>
+
             <button
               onClick={handleNewChat}
               title="New Chat"
