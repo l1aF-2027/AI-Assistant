@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server"; // Adjust based on your auth provider
-import { prisma } from "@/lib/prisma"; // Adjust based on your Prisma client
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
+// Update the type definition to match Next.js App Router's expected format
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
@@ -67,15 +68,16 @@ export async function PUT(
   }
 }
 
+// Also update the DELETE handler to be consistent
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = context.params.id;
+  const chatId = params.id;
 
   try {
     // Check if chat session exists and belongs to current user
