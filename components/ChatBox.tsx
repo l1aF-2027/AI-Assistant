@@ -80,15 +80,19 @@ const ChatBox = forwardRef(
     const [fileType, setFileType] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [chatCreated, setChatCreated] = useState(false);
+    const [textareaHeight, setTextareaHeight] = useState(100);
 
-    // Ref cho phần tử DOM chứa khung chat
+    // Ref for textarea element to adjust its height
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Ref for chat container DOM element
     const chatContainerRef = useRef<HTMLDivElement>(null);
-    // Ref cho phiên chat từ model
+    // Ref for chat session from model
     const chatSessionRef = useRef<any>(null);
 
     useEffect(() => {
       if (selectedChatSession) {
-        // Sử dụng optional chaining và fallback
+        // Use optional chaining and fallback
         const messages = selectedChatSession.messages || [];
         const formattedMessages = messages.map((msg: any) => ({
           role: msg.role,
@@ -118,13 +122,28 @@ const ChatBox = forwardRef(
       setImage(null);
     }, [selectedChatSession]);
 
-    // useEffect để tự động cuộn xuống dưới khi messages thay đổi
+    // Effect to auto-scroll chat when messages change
     useEffect(() => {
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop =
           chatContainerRef.current.scrollHeight;
       }
     }, [messages]);
+
+    // Effect to adjust textarea height based on content
+    useEffect(() => {
+      if (textareaRef.current) {
+        // Reset height to auto so we can get the correct scrollHeight
+        textareaRef.current.style.height = "60px";
+
+        // Calculate the content height
+        const scrollHeight = textareaRef.current.scrollHeight;
+
+        const newHeight = Math.min(Math.max(60, scrollHeight), 200);
+        textareaRef.current.style.height = `${newHeight}px`;
+        setTextareaHeight(newHeight);
+      }
+    }, [input]);
 
     const handleSend = async () => {
       if ((input.trim() || image || fileContent) && !isLoading) {
@@ -150,6 +169,8 @@ const ChatBox = forwardRef(
 
         setMessages((prev) => [...prev, userMessage]);
         setInput(""); // Clear the input field immediately
+        // Reset textarea height when clearing input
+        setTextareaHeight(60);
 
         try {
           const parts: any[] = [{ text: userMessage.content }];
@@ -179,12 +200,12 @@ const ChatBox = forwardRef(
 
           setMessages(newMessages);
 
-          // Nếu đây là tin nhắn đầu tiên, tạo chat mới
+          // If this is the first message, create new chat
           if (!chatCreated && !selectedChatSession) {
             setChatCreated(true);
             onChatCreated(newMessages);
           } else {
-            // Nếu chat đã tồn tại, cập nhật nó
+            // If chat exists, update it
             onChatUpdated(newMessages);
           }
         } catch (error) {
@@ -197,7 +218,7 @@ const ChatBox = forwardRef(
           const newMessages = [...messages, userMessage, errorMessage];
           setMessages(newMessages);
 
-          // Xử lý tương tự với các trường hợp lỗi
+          // Handle error cases similarly
           if (!chatCreated && !selectedChatSession) {
             setChatCreated(true);
             onChatCreated(newMessages);
@@ -541,10 +562,10 @@ const ChatBox = forwardRef(
     };
 
     return (
-      <div className="flex flex-col h-full bg-gray-50 rounded-3xl">
+      <div className="flex flex-col h-full bg-gray-50 rounded-3xl ">
         <div
           ref={chatContainerRef}
-          className="flex-grow overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-400"
+          className="flex-grow overflow-y-auto p-4 custom-scrollbar"
         >
           {messages.map((message, index) => (
             <div
@@ -674,10 +695,18 @@ const ChatBox = forwardRef(
 
           <div className="relative">
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message ..."
-              className="w-full p-3 pr-16 border rounded-lg resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-gray-500 custom-scrollbar"
+              className="w-full p-3 pr-16 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-500 custom-scrollbar"
+              style={{
+                minHeight: "60px",
+                height: `${textareaHeight}px`,
+                maxHeight: "200px",
+                overflowY: textareaHeight >= 200 ? "auto" : "hidden", 
+                lineHeight: "1.5",
+              }}
               onKeyPress={handleKeyPress}
             />
             <div className="absolute right-1 bottom-4 flex gap-2">
@@ -707,14 +736,21 @@ const ChatBox = forwardRef(
         </div>
 
         <style jsx global>{`
+          .custom-scrollbar {
+            /* Sử dụng overflow: auto để chỉ hiện scrollbar khi cần thiết */
+            overflow: auto;
+          }
+
           .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
             height: 6px;
           }
+
           .custom-scrollbar::-webkit-scrollbar-thumb {
             background-color: #9ca3af;
             border-radius: 3px;
           }
+
           .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
           }
