@@ -1,3 +1,4 @@
+"use client";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server"; // Adjust based on your auth provider
 import { prisma } from "@/lib/prisma"; // Adjust based on your Prisma client
