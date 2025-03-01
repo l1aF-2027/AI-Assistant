@@ -95,18 +95,7 @@ export async function GET(request: Request) {
   try {
     const chatSessions = await prisma.chatSession.findMany({
       where: { userId },
-      include: {
-        messages: {
-          select: {
-            id: true,
-            role: true,
-            content: true,
-            fileName: true,
-            fileType: true,
-            fileContent: true, // Thêm fileContent vào response
-          },
-        },
-      },
+      include: { messages: true },
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(chatSessions);

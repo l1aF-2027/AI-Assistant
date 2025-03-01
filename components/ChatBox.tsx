@@ -487,8 +487,14 @@ const ChatBox = forwardRef(
         return <img src="/icons/xls.png" alt="XLS Icon" width="24" />;
 
       // Default for text/code files
-      if (["js", "ts", "jsx", "tsx"].includes(extension!))
-        return <img src="/icons/code.png" alt="Code Icon" width="24" />;
+      if (extension === "js")
+        return <img src="/icons/code.png" alt="JS Icon" width="24" />;
+      if (extension === "ts")
+        return <img src="/icons/code.png" alt="TS Icon" width="24" />;
+      if (extension === "jsx")
+        return <img src="/icons/code.png" alt="JSX Icon" width="24" />;
+      if (extension === "tsx")
+        return <img src="/icons/code.png" alt="TSX Icon" width="24" />;
       if (["py"].includes(extension!))
         return <img src="/icons/python.png" alt="Python Icon" width="24" />;
       if (["css"].includes(extension!))
@@ -574,7 +580,7 @@ const ChatBox = forwardRef(
               <div
                 className={`inline-block p-4 rounded-lg ${
                   message.role === "user"
-                    ? "bg-black text-white"
+                    ? "bg-white text-black border border-gray-300"
                     : "bg-gray-200 text-black"
                 }`}
                 style={{ maxWidth: "min(90%, 600px)" }}
@@ -593,28 +599,26 @@ const ChatBox = forwardRef(
                     : message.content}
                 </ReactMarkdown>
                 {message.fileContent && (
-                  <div className="mt-2 p-2 hover:bg-gray-700 rounded-md">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={() =>
-                          handleDownloadFile(
-                            message.fileContent!,
-                            message.fileName || "file.txt",
-                            message.fileType || "text/plain"
-                          )
-                        }
-                        className="text-white hover:text-gray-300 transition-colors"
-                        title="Download file"
-                      >
-                        <span className="text-sm font-medium text-white flex items-center">
-                          {getFileIcon(
-                            message.fileType || null,
-                            message.fileName
-                          )}
-                          <span className="ml-2">{message.fileName}</span>
-                        </span>
-                      </button>
-                    </div>
+                  <div className="mt-2 p-2  rounded-md flex justify-between items-center hover:bg-gray-700 hover:text-white">
+                    <button
+                      onClick={() =>
+                        handleDownloadFile(
+                          message.fileContent!,
+                          message.fileName || "file.txt",
+                          message.fileType || "text/plain"
+                        )
+                      }
+                      className=""
+                      title="Download file"
+                    >
+                      <span className="text-sm font-medium flex items-center">
+                        {getFileIcon(
+                          message.fileType || null,
+                          message.fileName
+                        )}
+                        <span className="ml-2">{message.fileName}</span>
+                      </span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -679,7 +683,7 @@ const ChatBox = forwardRef(
             <div className="absolute right-1 bottom-4 flex gap-2">
               <input
                 type="file"
-                accept=".txt,.js,.ts,.py,.java,.c,.cpp,.html,.css,.md,image/*,.docx,.pdf,.xlsx,.xls,.tsx,.ts,.js,.jsx,.prisma"
+                accept=".txt,.js,.ts,.py,.java,.c,.cpp,.html,.css,.md,image/*,.docx,.pdf,.xlsx,.xls,.tsx,.ts,.js,.jsx,.prisma,.doc, .xls,.csv"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"
