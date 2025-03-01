@@ -5,15 +5,14 @@ import { prisma } from "@/lib/prisma";
 // Update the type definition to match Next.js App Router's expected format
 export async function PUT(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } } // Correct parameter destructuring
 ) {
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = context.params.id;
+  const chatId = params.id; // Access params directly from destructured object
   const { messages, title } = await request.json();
-
   try {
     // Check if chat session exists and belongs to current user
     const existingChat = await prisma.chatSession.findFirst({
@@ -71,13 +70,13 @@ export async function PUT(
 // Also update the DELETE handler to be consistent
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } } // Correct parameter destructuring
 ) {
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = context.params.id;
+  const chatId = params.id; // Access params directly from destructured object
 
   try {
     // Check if chat session exists and belongs to current user
