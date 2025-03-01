@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 // Update the type definition to match Next.js App Router's expected format
 export async function PUT(
-  request: NextRequest,
+  request: Request,
   context: { params: { id: string } }
 ) {
   const authResult = await auth();
@@ -70,7 +70,7 @@ export async function PUT(
 
 // Also update the DELETE handler to be consistent
 export async function DELETE(
-  request: NextRequest,
+  request: Request,
   context: { params: { id: string } }
 ) {
   const authResult = await auth();
