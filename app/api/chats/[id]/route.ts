@@ -1,110 +1,118 @@
-import { NextResponse, NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server"; // Adjust based on your auth provider
+import { prisma } from "@/lib/prisma"; // Adjust based on your Prisma client
 
-// Update the type definition to match Next.js App Router's expected format
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } } // Correct parameter destructuring
-) {
+export async function POST(request: Request) {
+  // Await auth() to resolve headers() error
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = params.id; // Access params directly from destructured object
-  const { messages, title } = await request.json();
+  // Check if the user exists in the database
+  let user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    console.log(`User with ID ${userId} not found. Creating new user.`);
+    // Create a new user
+    user = await prisma.user.create({
+      data: {
+        id: userId,
+      },
+    });
+  }
+
+  const { messages, title, oldChatSessionId } = await request.json();
+
   try {
-    // Check if chat session exists and belongs to current user
-    const existingChat = await prisma.chatSession.findFirst({
-      where: {
-        id: chatId,
-        userId,
-      },
-      include: {
-        messages: true,
-      },
-    });
+    let chatSession;
 
-    if (!existingChat) {
-      return new NextResponse("Chat not found", { status: 404 });
-    }
+    if (oldChatSessionId) {
+      // Check if the old chat session exists
+      const existingChatSession = await prisma.chatSession.findUnique({
+        where: { id: oldChatSessionId },
+      });
 
-    // Check if chat content has changed
-    const hasChanged = hasMessagesChanged(existingChat.messages, messages);
+      if (existingChatSession) {
+        // Delete all messages related to the old chat session
+        await prisma.chatMessage.deleteMany({
+          where: { sessionId: oldChatSessionId },
+        });
 
-    // Delete all old messages
-    await prisma.chatMessage.deleteMany({
-      where: { sessionId: chatId },
-    });
+        // Delete the old chat session
+        await prisma.chatSession.delete({
+          where: { id: oldChatSessionId },
+        });
+      }
 
-    // Create new messages
-    for (const msg of messages) {
-      await prisma.chatMessage.create({
+      // Create a new ChatSession
+      chatSession = await prisma.chatSession.create({
         data: {
-          role: msg.role,
-          content: msg.content,
-          fileContent: msg.file?.content || null,
-          fileName: msg.file?.name || null,
-          fileType: msg.file?.type || null,
-          sessionId: chatId,
+          title,
+          userId: user.id, // Use the user's id
+          messages: {
+            create: messages.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content,
+              fileContent: msg.file?.content || null,
+              fileName: msg.file?.name || null,
+              fileType: msg.file?.type || null,
+            })),
+          },
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Create a new ChatSession
+      chatSession = await prisma.chatSession.create({
+        data: {
+          title,
+          userId: user.id, // Use the user's id
+          messages: {
+            create: messages.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content,
+              fileContent: msg.file?.content || null,
+              fileName: msg.file?.name || null,
+              fileType: msg.file?.type || null,
+            })),
+          },
+          updatedAt: new Date(),
         },
       });
     }
 
-    // Update title and updatedAt if content changed
-    await prisma.chatSession.update({
-      where: { id: chatId },
-      data: {
-        title,
-        ...(hasChanged ? { updatedAt: new Date() } : {}),
-      },
-    });
-
-    return NextResponse.json({ success: true, updated: hasChanged });
+    return NextResponse.json({ success: true, chatSession });
   } catch (error) {
-    console.error("Error updating chat:", error);
-    return new NextResponse("Failed to update chat", { status: 500 });
+    console.error("Error saving chat:", error);
+    return new NextResponse("Failed to save chat", { status: 500 });
   }
 }
 
-// Also update the DELETE handler to be consistent
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } } // Correct parameter destructuring
-) {
+export async function GET(request: Request) {
   const authResult = await auth();
   const { userId } = authResult;
   if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const chatId = params.id; // Access params directly from destructured object
-
   try {
-    // Check if chat session exists and belongs to current user
-    const existingChat = await prisma.chatSession.findFirst({
-      where: {
-        id: chatId,
-        userId,
+    const chatSessions = await prisma.chatSession.findMany({
+      where: { userId },
+      include: {
+        messages: {
+          select: {
+            id: true,
+            role: true,
+            content: true,
+            fileName: true,
+            fileType: true,
+            // We won't include fileContent in the initial load to reduce payload size
+          },
+        },
       },
+      orderBy: { updatedAt: "desc" },
     });
-
-    if (!existingChat) {
-      return new NextResponse("Chat not found", { status: 404 });
-    }
-
-    // Delete all messages related to the chat session
-    await prisma.chatMessage.deleteMany({
-      where: { sessionId: chatId },
-    });
-
-    // Delete the chat session
-    await prisma.chatSession.delete({
-      where: { id: chatId },
-    });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json(chatSessions);
   } catch (error) {
-    console.error("Error deleting chat:", error);
-    return new NextResponse("Failed to delete chat", { status: 500 });
+    console.error("Error fetching chat sessions:", error);
+    return new NextResponse("Failed to fetch chat sessions", { status: 500 });
   }
 }
 
