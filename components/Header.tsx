@@ -1,7 +1,7 @@
 "use client";
 export default function Header() {
   return (
-    <a href="https://git.io/typing-svg" className="flex items-center">
+    <a href="#" className="flex items-center">
       <img
         src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Comet.png"
         alt="Comet"

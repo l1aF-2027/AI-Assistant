@@ -140,7 +140,10 @@ export default function Home() {
       <div className="mx-auto max-w-7xl">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-semibold p-2 flex items-center">
+            <h1
+              onClick={handleNewChat}
+              className="text-3xl font-semibold p-2 flex items-center cursor-pointer"
+            >
               <img
                 src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Comet.png"
                 alt="Comet"
