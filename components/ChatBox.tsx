@@ -12,8 +12,8 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { HiOutlineUpload } from "react-icons/hi";
-import { MdSend, MdClose, MdDownload } from "react-icons/md";
-import { Loader2 } from "lucide-react";
+import { MdSend, MdClose, MdDownload, MdContentCopy } from "react-icons/md";
+import { Loader2, Check } from "lucide-react";
 import remarkBreaks from "remark-breaks";
 
 // Initialize Gemini client
@@ -66,6 +66,41 @@ interface ChatBoxProps {
   onChatCreated: (messages: Message[]) => void;
   onChatUpdated: (messages: Message[]) => void;
 }
+
+// Create a component for the code block with copy button
+const CodeBlock = ({ language, value }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={copyToClipboard}
+        className="absolute top-2 right-2 p-1.5 bg-gray-700 bg-opacity-80 text-white rounded-md hover:bg-opacity-100 transition-colors"
+        title="Copy code"
+      >
+        {copied ? (
+          <Check size={16} className="text-green-400" />
+        ) : (
+          <MdContentCopy size={16} />
+        )}
+      </button>
+      <SyntaxHighlighter
+        style={vscDarkPlus}
+        language={language}
+        PreTag="div"
+        className="rounded-md"
+      >
+        {value}
+      </SyntaxHighlighter>
+    </div>
+  );
+};
 
 const ChatBox = forwardRef(
   (
@@ -425,18 +460,15 @@ const ChatBox = forwardRef(
       }
     };
 
+    // Updated Markdown components with custom code block renderer
     const MarkdownComponents = {
       code({ node, inline, className, children, ...props }: any) {
         const match = /language-(\w+)/.exec(className || "");
         return !inline && match ? (
-          <SyntaxHighlighter
-            style={vscDarkPlus}
+          <CodeBlock
             language={match[1]}
-            PreTag="div"
-            {...props}
-          >
-            {String(children).replace(/\n$/, "")}
-          </SyntaxHighlighter>
+            value={String(children).replace(/\n$/, "")}
+          />
         ) : (
           <code className={className} {...props}>
             {children}
@@ -668,7 +700,6 @@ const ChatBox = forwardRef(
                   <button
                     onClick={handleRemoveImage}
                     className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full"
-                    style={{ transform: "translate(50%, -50%)" }}
                   >
                     <MdClose size={16} />
                   </button>
@@ -704,7 +735,7 @@ const ChatBox = forwardRef(
                 minHeight: "60px",
                 height: `${textareaHeight}px`,
                 maxHeight: "200px",
-                overflowY: textareaHeight >= 200 ? "auto" : "hidden", 
+                overflowY: textareaHeight >= 200 ? "auto" : "hidden",
                 lineHeight: "1.5",
               }}
               onKeyPress={handleKeyPress}
