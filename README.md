@@ -2,7 +2,7 @@
 
 The AI Assistant website is an intelligent platform that provides an AI-powered virtual assistant with a wide range of features to support users in their daily tasks.
 
-[![Open website](https://img.shields.io/badge/website-000000?style=for-the-badge&logo=About.me&logoColor=white)](https://gemai-ai-assistant.vercel.app/)
+[![Open website](https://img.shields.io/badge/website-000000?style=for-the-badge&logo=About.me&logoColor=white)](https://comet-ai-assitant.vercel.app/)
 
 
 https://github.com/user-attachments/assets/a737a84c-0c86-4ad1-90da-15c754fa1792
