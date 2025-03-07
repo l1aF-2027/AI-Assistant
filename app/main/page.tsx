@@ -136,7 +136,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-100 relative">
+    <div className="h-screen p-6 bg-gray-100 relative overflow-clip">
       <div className="mx-auto max-w-7xl">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
