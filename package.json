@@ -24,6 +24,7 @@
     "clsx": "^2.1.1",
     "docx": "^9.2.0",
     "framer-motion": "^12.4.7",
+    "katex": "^0.16.21",
     "lucide-react": "^0.475.0",
     "mammoth": "^1.9.0",
     "next": "15.1.7",
@@ -36,7 +37,10 @@
     "react-icons": "^5.5.0",
     "react-markdown": "^10.0.0",
     "react-syntax-highlighter": "^15.6.1",
+    "rehype-katex": "^7.0.1",
     "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "xlsx": "^0.18.5"

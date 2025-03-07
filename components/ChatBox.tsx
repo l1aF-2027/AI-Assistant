@@ -15,6 +15,27 @@ import { HiOutlineUpload } from "react-icons/hi";
 import { MdSend, MdClose, MdDownload, MdContentCopy } from "react-icons/md";
 import { Loader2, Check } from "lucide-react";
 import remarkBreaks from "remark-breaks";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
+import "katex/dist/katex.min.css";
+import katex from "katex";
+
+const InlineMath = ({ children }: { children: string }) => {
+  const html = katex.renderToString(children?.toString() || "", {
+    throwOnError: false,
+    output: "mathml",
+  });
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+};
+
+const BlockMath = ({ children }: { children: string }) => {
+  const html = katex.renderToString(children?.toString() || "", {
+    throwOnError: false,
+    displayMode: true,
+  });
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+};
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
@@ -479,6 +500,29 @@ const ChatBox = forwardRef(
           </code>
         );
       },
+      table({ children }: { children: React.ReactNode }) {
+        return (
+          <table className="border-collapse border border-gray-400 justify-center">
+            {children}
+          </table>
+        );
+      },
+      th({ children }: { children: React.ReactNode }) {
+        return (
+          <th className="border border-gray-400 px-2 py-1 bg-gray-100">
+            {children}
+          </th>
+        );
+      },
+      td({ children }: { children: React.ReactNode }) {
+        return <td className="border border-gray-400 px-2 py-1">{children}</td>;
+      },
+      math: ({ children }: { children: string }) => (
+        <BlockMath>{children}</BlockMath>
+      ),
+      inlineMath: ({ children }: { children: string }) => (
+        <InlineMath>{children}</InlineMath>
+      ),
     };
 
     useImperativeHandle(ref, () => ({
@@ -644,7 +688,8 @@ const ChatBox = forwardRef(
               >
                 <ReactMarkdown
                   components={MarkdownComponents}
-                  remarkPlugins={[remarkBreaks]}
+                  remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                 >
                   {message.fileContent
                     ? message.content
