@@ -6,6 +6,27 @@
   body {
     @apply font-primary bg-primary text-white leading-loose;
   }
+  [style*="break-word"] p {
+    @apply  break-words;
+    margin: 0.5em 0;
+  }
+
+  /* Xử lý links dài */
+  [style*="break-word"] a {
+    @apply break-all;
+  }
+
+  /* Xử lý code blocks */
+  [style*="break-word"] pre {
+    @apply whitespace-pre-wrap break-words max-w-full;
+    padding: 1em;
+    border-radius: 8px;
+  }
+
+  /* Đảm bảo code inline không bị tràn */
+  [style*="break-word"] code {
+    @apply break-words whitespace-pre-wrap;
+  }
   /* Trong phần global style */
   .katex {
     font-size: 1.1em;

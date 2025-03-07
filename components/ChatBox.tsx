@@ -679,12 +679,16 @@ const ChatBox = forwardRef(
               )}
 
               <div
-                className={`inline-block p-4 rounded-lg ${
+                className={`inline-block p-4 rounded-lg max-w-[600px] ${
                   message.role === "user"
                     ? "bg-white text-black border border-gray-300"
                     : "bg-gray-200 text-black"
                 }`}
-                style={{ maxWidth: "min(90%, 600px)" }}
+                style={{
+                  // Kích hoạt text wrapping
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                }}
               >
                 <ReactMarkdown
                   components={MarkdownComponents}
