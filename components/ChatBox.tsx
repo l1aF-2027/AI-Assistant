@@ -154,13 +154,30 @@ const ChatBox = forwardRef(
       if (selectedChatSession) {
         // Use optional chaining and fallback
         const messages = selectedChatSession.messages || [];
-        const formattedMessages = messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-          fileContent: msg.fileContent || undefined,
-          fileName: msg.fileName || undefined,
-          fileType: msg.fileType || undefined,
-        }));
+        const formattedMessages = messages.map((msg: any) => {
+          if (
+            msg.fileType &&
+            msg.fileType.startsWith("image/") &&
+            msg.fileContent
+          ) {
+            return {
+              role: msg.role,
+              content: msg.content,
+              image: `data:${msg.fileType};base64,${msg.fileContent}`,
+              fileContent: msg.fileContent,
+              fileName: msg.fileName,
+              fileType: msg.fileType,
+            };
+          }
+          return {
+            role: msg.role,
+            content: msg.content,
+            fileContent: msg.fileContent || undefined,
+            fileName: msg.fileName || undefined,
+            fileType: msg.fileType || undefined,
+          };
+        });
+
 
         setMessages(formattedMessages);
         setChatCreated(true);
@@ -747,29 +764,29 @@ useEffect(() => {
                         .join("\n")
                     : message.content}
                 </ReactMarkdown>
-                {message.fileContent && (
-                  <div className="mt-2 p-2  rounded-md flex justify-between items-center hover:bg-gray-700 hover:text-white">
-                    <button
-                      onClick={() =>
-                        handleDownloadFile(
-                          message.fileContent!,
-                          message.fileName || "file.txt",
-                          message.fileType || "text/plain"
-                        )
-                      }
-                      className=""
-                      title="Download file"
-                    >
-                      <span className="text-sm font-medium flex items-center">
-                        {getFileIcon(
-                          message.fileType || null,
-                          message.fileName
-                        )}
-                        <span className="ml-2">{message.fileName}</span>
-                      </span>
-                    </button>
-                  </div>
-                )}
+                {message.fileContent &&
+                  !message.fileType?.startsWith("image/") && (
+                    <div className="mt-2 p-2 rounded-md flex justify-between items-center hover:bg-gray-700 hover:text-white">
+                      <button
+                        onClick={() =>
+                          handleDownloadFile(
+                            message.fileContent!,
+                            message.fileName || "file.txt",
+                            message.fileType || "text/plain"
+                          )
+                        }
+                        title="Download file"
+                      >
+                        <span className="text-sm font-medium flex items-center">
+                          {getFileIcon(
+                            message.fileType || null,
+                            message.fileName
+                          )}
+                          <span className="ml-2">{message.fileName}</span>
+                        </span>
+                      </button>
+                    </div>
+                  )}
               </div>
             </div>
           ))}
