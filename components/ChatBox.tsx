@@ -190,6 +190,49 @@ const ChatBox = forwardRef(
       }
     }, [messages]);
 
+    // Thêm effect này vào component ChatBox, trước các effects khác hoặc sau effect điều chỉnh textareaHeight
+useEffect(() => {
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      // If we find an image in the clipboard
+      if (items[i].type.indexOf("image") !== -1) {
+        // Prevent the default paste behavior
+        e.preventDefault();
+        
+        // Get the file from the clipboard item
+        const file = items[i].getAsFile();
+        if (!file) continue;
+        
+        // Create a FileReader to read the image
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          // Set the image data URL to state
+          setImage(event.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+        
+        // Break after finding the first image
+        break;
+      }
+    }
+  };
+
+  // Attach the paste event handler to the textarea
+  const textarea = textareaRef.current;
+  if (textarea) {
+    textarea.addEventListener("paste", handlePaste);
+  }
+
+  // Clean up event listener when component unmounts
+  return () => {
+    if (textarea) {
+      textarea.removeEventListener("paste", handlePaste);
+    }
+  };
+}, []);
     // Effect to adjust textarea height based on content
     useEffect(() => {
       if (textareaRef.current) {
