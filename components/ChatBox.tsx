@@ -225,7 +225,9 @@ const ChatBox = forwardRef(
                   ?.split(".")
                   .pop()}\n${fileContent}\n\`\`\``
               : "",
-          ].join("\n\n"),
+          ].join(
+            "                                                                                                          \n\n"
+          ),
           image: image || undefined,
           fileContent: fileContent || undefined,
           fileName: fileName || undefined,
@@ -587,7 +589,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   rehypePlugins={[rehypeKatex]}
                 >
                   {message.fileContent
-                    ? message.content.split("\n\n**File:**")[0]
+                    ? message.content.split("                                                                                                          \n\n**File:**")[0]
                     : message.content}
                 </ReactMarkdown>
 
