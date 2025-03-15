@@ -20,7 +20,9 @@ import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import "katex/dist/katex.min.css";
 import katex from "katex";
+import { Buffer } from "buffer";
 
+(window as any).Buffer = Buffer;
 const InlineMath = ({ children }: { children: string }) => {
   const html = katex.renderToString(children?.toString() || "", {
     throwOnError: false,
@@ -37,7 +39,6 @@ const BlockMath = ({ children }: { children: string }) => {
   return <div dangerouslySetInnerHTML={{ __html: html }} />;
 };
 
-// Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
 const getCurrentTime = () => {
   const now = new Date();
@@ -54,26 +55,19 @@ const model = genAI.getGenerativeModel({
   },
 });
 
-// Add this at the top level
 let pdfjsLib = null;
 
-// Preload PDF.js
 if (typeof window !== "undefined") {
   import("pdfjs-dist")
     .then((module) => {
       pdfjsLib = module;
-      // Configure worker
       import("pdfjs-dist/build/pdf.worker.min.mjs")
         .then((worker) => {
           pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
         })
-        .catch((err) => {
-          console.error("Failed to load PDF.js worker:", err);
-        });
+        .catch(console.error);
     })
-    .catch((err) => {
-      console.error("Failed to load PDF.js library:", err);
-    });
+    .catch(console.error);
 }
 
 interface Message {
@@ -92,7 +86,6 @@ interface ChatBoxProps {
   onChatUpdated: (messages: Message[]) => void;
 }
 
-// Create a component for the code block with copy button
 const CodeBlock = ({ language, value }) => {
   const [copied, setCopied] = useState(false);
 
@@ -141,44 +134,51 @@ const ChatBox = forwardRef(
     const [isLoading, setIsLoading] = useState(false);
     const [chatCreated, setChatCreated] = useState(false);
     const [textareaHeight, setTextareaHeight] = useState(100);
+    const [isDragging, setIsDragging] = useState(false);
 
-    // Ref for textarea element to adjust its height
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    // Ref for chat container DOM element
     const chatContainerRef = useRef<HTMLDivElement>(null);
-    // Ref for chat session from model
     const chatSessionRef = useRef<any>(null);
+
+    // Xử lý drag and drop
+    const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isDragging) setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        const fakeEvent = {
+          target: {
+            files: files,
+          },
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        await handleFileUpload(fakeEvent);
+      }
+    };
 
     useEffect(() => {
       if (selectedChatSession) {
-        // Use optional chaining and fallback
         const messages = selectedChatSession.messages || [];
-        const formattedMessages = messages.map((msg: any) => {
-          if (
-            msg.fileType &&
-            msg.fileType.startsWith("image/") &&
-            msg.fileContent
-          ) {
-            return {
-              role: msg.role,
-              content: msg.content,
-              image: `data:${msg.fileType};base64,${msg.fileContent}`,
-              fileContent: msg.fileContent,
-              fileName: msg.fileName,
-              fileType: msg.fileType,
-            };
-          }
-          return {
-            role: msg.role,
-            content: msg.content,
-            fileContent: msg.fileContent || undefined,
-            fileName: msg.fileName || undefined,
-            fileType: msg.fileType || undefined,
-          };
-        });
-
-
+        const formattedMessages = messages.map((msg: any) => ({
+          ...msg,
+          image:
+            msg.fileType?.startsWith("image/") && msg.fileContent
+              ? `data:${msg.fileType};base64,${msg.fileContent}`
+              : undefined,
+        }));
         setMessages(formattedMessages);
         setChatCreated(true);
 
@@ -193,13 +193,8 @@ const ChatBox = forwardRef(
         setMessages([]);
         setChatCreated(false);
       }
-      setFileContent(null);
-      setFileName(null);
-      setFileType(null);
-      setImage(null);
     }, [selectedChatSession]);
 
-    // Effect to auto-scroll chat when messages change
     useEffect(() => {
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop =
@@ -207,58 +202,10 @@ const ChatBox = forwardRef(
       }
     }, [messages]);
 
-    // Thêm effect này vào component ChatBox, trước các effects khác hoặc sau effect điều chỉnh textareaHeight
-useEffect(() => {
-  const handlePaste = (e) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    for (let i = 0; i < items.length; i++) {
-      // If we find an image in the clipboard
-      if (items[i].type.indexOf("image") !== -1) {
-        // Prevent the default paste behavior
-        e.preventDefault();
-        
-        // Get the file from the clipboard item
-        const file = items[i].getAsFile();
-        if (!file) continue;
-        
-        // Create a FileReader to read the image
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          // Set the image data URL to state
-          setImage(event.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-        
-        // Break after finding the first image
-        break;
-      }
-    }
-  };
-
-  // Attach the paste event handler to the textarea
-  const textarea = textareaRef.current;
-  if (textarea) {
-    textarea.addEventListener("paste", handlePaste);
-  }
-
-  // Clean up event listener when component unmounts
-  return () => {
-    if (textarea) {
-      textarea.removeEventListener("paste", handlePaste);
-    }
-  };
-}, []);
-    // Effect to adjust textarea height based on content
     useEffect(() => {
       if (textareaRef.current) {
-        // Reset height to auto so we can get the correct scrollHeight
         textareaRef.current.style.height = "60px";
-
-        // Calculate the content height
         const scrollHeight = textareaRef.current.scrollHeight;
-
         const newHeight = Math.min(Math.max(60, scrollHeight), 200);
         textareaRef.current.style.height = `${newHeight}px`;
         setTextareaHeight(newHeight);
@@ -278,9 +225,7 @@ useEffect(() => {
                   ?.split(".")
                   .pop()}\n${fileContent}\n\`\`\``
               : "",
-          ].join(
-            "                                                                        \n\n\n\n"
-          ),
+          ].join("\n\n"),
           image: image || undefined,
           fileContent: fileContent || undefined,
           fileName: fileName || undefined,
@@ -288,20 +233,17 @@ useEffect(() => {
         };
 
         setMessages((prev) => [...prev, userMessage]);
-        setInput(""); // Clear the input field immediately
-        // Reset textarea height when clearing input
+        setInput("");
         setTextareaHeight(60);
 
         try {
           const parts: any[] = [{ text: userMessage.content }];
-
           if (image) {
             const [metaInfo, base64Data] = image.split(",");
-            const mimeType = metaInfo.split(":")[1].split(";")[0];
             parts.push({
               inlineData: {
                 data: base64Data,
-                mimeType: mimeType,
+                mimeType: metaInfo.split(":")[1].split(";")[0],
               },
             });
           }
@@ -319,32 +261,20 @@ useEffect(() => {
           ];
 
           setMessages(newMessages);
-
-          // If this is the first message, create new chat
-          if (!chatCreated && !selectedChatSession) {
-            setChatCreated(true);
-            onChatCreated(newMessages);
-          } else {
-            // If chat exists, update it
-            onChatUpdated(newMessages);
-          }
+          !chatCreated && !selectedChatSession
+            ? onChatCreated(newMessages)
+            : onChatUpdated(newMessages);
         } catch (error) {
           console.error("Error:", error);
           const errorMessage = {
             role: "model",
             content: "⚠️ An error occurred while processing your request",
           };
-
           const newMessages = [...messages, userMessage, errorMessage];
           setMessages(newMessages);
-
-          // Handle error cases similarly
-          if (!chatCreated && !selectedChatSession) {
-            setChatCreated(true);
-            onChatCreated(newMessages);
-          } else {
-            onChatUpdated(newMessages);
-          }
+          !chatCreated && !selectedChatSession
+            ? onChatCreated(newMessages)
+            : onChatUpdated(newMessages);
         } finally {
           setIsLoading(false);
           setImage(null);
@@ -381,147 +311,31 @@ useEffect(() => {
       }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        const fileExtension = file.name.split(".").pop()?.toLowerCase();
+const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files && e.target.files[0]) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
 
-        // Handle text/code files
-        if (
-          file.type.startsWith("text/") ||
-          [
-            "js",
-            "jsx",
-            "tsx",
-            "prisma",
-            "ts",
-            "py",
-            "java",
-            "c",
-            "cpp",
-            "html",
-            "css",
-            "md",
-            "txt",
-          ].includes(fileExtension!)
-        ) {
-          reader.onload = (event) => {
-            setFileContent(event.target?.result as string);
-            setFileName(file.name);
-            setFileType(file.type);
-          };
-          reader.readAsText(file);
-        }
-        // Handle PDF files
-        else if (fileExtension === "pdf") {
-          reader.onload = async (event) => {
-            try {
-              // Use our preloaded PDF.js instance
-              const arrayBuffer = event.target?.result as ArrayBuffer;
-              const textContent = await extractPdfText(arrayBuffer);
+    // Đọc file dưới dạng ArrayBuffer
+    reader.onload = async (event) => {
+      const arrayBuffer = event.target?.result as ArrayBuffer;
 
-              setFileContent(
-                textContent || "PDF content could not be extracted fully."
-              );
-              setFileName(file.name);
-              setFileType("application/pdf");
-            } catch (err) {
-              console.error("PDF extraction error:", err);
+      // Convert sang Base64 để lưu trữ
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ""
+        )
+      );
 
-              // Use a simple fallback message
-              setFileContent(
-                "PDF content could not be extracted. Please copy and paste the content manually."
-              );
-              setFileName(file.name);
-              setFileType("application/pdf");
-
-              alert(
-                "Could not extract PDF content completely. The file might be encrypted, scanned, or contain complex formatting."
-              );
-            }
-          };
-          reader.readAsArrayBuffer(file);
-        }
-        // Handle Word documents (.docx)
-        else if (fileExtension === "docx") {
-          reader.onload = async (event) => {
-            try {
-              const mammoth = await import("mammoth");
-              const result = await mammoth.extractRawText({
-                arrayBuffer: event.target?.result as ArrayBuffer,
-              });
-              setFileContent(
-                result.value ||
-                  "Word document content could not be extracted fully."
-              );
-              setFileName(file.name);
-              setFileType(
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              );
-            } catch (err) {
-              console.error("Error parsing .docx:", err);
-              setFileContent(
-                "Word document content could not be extracted. Please copy and paste the content manually."
-              );
-              setFileName(file.name);
-              setFileType(
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              );
-              alert(
-                "Could not extract Word document content. The file might have complex formatting."
-              );
-            }
-          };
-          reader.readAsArrayBuffer(file);
-        }
-        // Handle Excel files (.xlsx)
-        else if (fileExtension === "xlsx") {
-          reader.onload = async (event) => {
-            try {
-              const XLSX = await import("xlsx");
-              const workbook = XLSX.read(event.target?.result, {
-                type: "array",
-              });
-              const sheetName = workbook.SheetNames[0];
-              const sheet = workbook.Sheets[sheetName];
-              const data = XLSX.utils.sheet_to_csv(sheet); // Convert Excel to CSV format
-              setFileContent(
-                data || "Excel data could not be extracted fully."
-              );
-              setFileName(file.name);
-              setFileType(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              );
-            } catch (err) {
-              console.error("Error loading XLSX library or parsing file:", err);
-              setFileContent(
-                "Excel data could not be extracted. Please copy and paste the content manually."
-              );
-              setFileName(file.name);
-              setFileType(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              );
-              alert(
-                "Could not extract Excel data. The file might have complex formatting."
-              );
-            }
-          };
-          reader.readAsArrayBuffer(file);
-        }
-        // Handle images
-        else if (file.type.startsWith("image/")) {
-          reader.onload = (event) => {
-            setImage(event.target?.result as string);
-          };
-          reader.readAsDataURL(file);
-        } else {
-          alert(
-            "Only text, code, PDF, Word (.docx), Excel (.xlsx), and images are allowed!"
-          );
-        }
-      }
+      setFileContent(base64); // Lưu dữ liệu gốc dưới dạng base64
+      setFileName(file.name);
+      setFileType(file.type);
     };
+
+    reader.readAsArrayBuffer(file);
+  }
+};
 
     const handleRemoveFile = () => {
       setFileContent(null);
@@ -670,22 +484,27 @@ useEffect(() => {
 
     // Function to download file content
     const handleDownloadFile = (
-      fileContent: string,
+      base64Content: string,
       fileName: string,
-      fileType: string
+      mimeType: string
     ) => {
-      // Create blob
-      const blob = new Blob([fileContent], { type: fileType });
+      // Chuyển base64 thành ArrayBuffer
+      const byteString = atob(base64Content);
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uintArray = new Uint8Array(arrayBuffer);
 
-      // Create download link
+      for (let i = 0; i < byteString.length; i++) {
+        uintArray[i] = byteString.charCodeAt(i);
+      }
+
+      // Tạo Blob từ dữ liệu gốc
+      const blob = new Blob([arrayBuffer], { type: mimeType });
+
+      // Tạo link tải xuống
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = fileName;
-
-      // Append to body, click, and remove
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
     };
 
     // Function to download image
@@ -702,7 +521,20 @@ useEffect(() => {
     };
 
     return (
-      <div className="flex flex-col h-full bg-gray-50 rounded-3xl ">
+      <div
+        className="flex flex-col h-full bg-gray-50 rounded-3xl relative"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {isDragging && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 z-50 rounded-3xl flex items-center justify-center drag-overlay">
+            <div className="text-white text-xl font-semibold flex items-center">
+              <HiOutlineUpload className="mr-2" size={32} />
+              Drop files here to upload
+            </div>
+          </div>
+        )}
         <div
           ref={chatContainerRef}
           className="flex-grow overflow-y-auto p-4 custom-scrollbar"
@@ -745,7 +577,6 @@ useEffect(() => {
                     : "bg-gray-200 text-black"
                 }`}
                 style={{
-                  // Kích hoạt text wrapping
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
                 }}
@@ -756,14 +587,10 @@ useEffect(() => {
                   rehypePlugins={[rehypeKatex]}
                 >
                   {message.fileContent
-                    ? message.content
-                        .split(
-                          "                                                                        \n\n\n\n"
-                        )
-                        .slice(0, -1)
-                        .join("\n")
+                    ? message.content.split("\n\n**File:**")[0]
                     : message.content}
                 </ReactMarkdown>
+
                 {message.fileContent &&
                   !message.fileType?.startsWith("image/") && (
                     <div className="mt-2 p-2 rounded-md flex justify-between items-center hover:bg-gray-700 hover:text-white">
@@ -801,7 +628,7 @@ useEffect(() => {
         </div>
 
         <div className="p-4 border-t rounded-b-3xl bg-white">
-          {(image || fileContent) && (
+          {(image || fileContent) && !isLoading && (
             <div className="relative mb-2 space-y-2">
               {image && (
                 <div className="relative inline-block">
@@ -836,7 +663,6 @@ useEffect(() => {
               )}
             </div>
           )}
-
           <div className="relative">
             <textarea
               ref={textareaRef}
@@ -897,6 +723,11 @@ useEffect(() => {
 
           .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
+          }
+          .drag-overlay {
+            border: 2px dashed rgb(29, 29, 37);
+            transition: all 0.3s ease;
+            pointer-events: none;
           }
         `}</style>
       </div>

@@ -20,6 +20,7 @@
     "@types/xlsx": "^0.0.35",
     "animate.css": "^4.1.1",
     "axios": "^1.7.9",
+    "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "docx": "^9.2.0",
