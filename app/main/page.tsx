@@ -113,14 +113,15 @@ export default function Home() {
       }));
 
       try {
-        const response = await fetch(`/api/chats/${currentChatId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: formattedMessages,
-            title,
-          }),
-        });
+         const response = await fetch(`/api/chats/${currentChatId}`, {
+           // Ensure URL format
+           method: "PUT",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({
+             messages: formattedMessages,
+             title,
+           }),
+         });
 
         if (!response.ok) throw new Error("Failed to update chat");
         setRefreshTrigger((prev) => prev + 1); // Trigger ChatHistory refresh

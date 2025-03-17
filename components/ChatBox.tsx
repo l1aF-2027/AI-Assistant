@@ -263,9 +263,13 @@ const ChatBox = forwardRef(
           ];
 
           setMessages(newMessages);
-          !chatCreated && !selectedChatSession
-            ? onChatCreated(newMessages)
-            : onChatUpdated(newMessages);
+          if (!chatCreated && !selectedChatSession) {
+            onChatCreated(newMessages);
+            setChatCreated(true); // Mark the chat as created to ensure subsequent messages update it
+          } else {
+            onChatUpdated(newMessages);
+          }
+
         } catch (error) {
           console.error("Error:", error);
           const errorMessage = {
