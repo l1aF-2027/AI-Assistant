@@ -576,7 +576,7 @@ const ChatBox = forwardRef(
               )}
 
               <div
-                className={`inline-block p-4 rounded-lg max-w-[800px] md:max-w-[200px] ${
+                className={`inline-block p-4 rounded-lg max-w-[800px] ${
                   message.role === "user"
                     ? "bg-white text-black border border-gray-300"
                     : "bg-gray-200 text-black"
