@@ -269,7 +269,6 @@ const ChatBox = forwardRef(
           } else {
             onChatUpdated(newMessages);
           }
-
         } catch (error) {
           console.error("Error:", error);
           const errorMessage = {
@@ -317,31 +316,31 @@ const ChatBox = forwardRef(
       }
     };
 
-const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (e.target.files && e.target.files[0]) {
-    const file = e.target.files[0];
-    const reader = new FileReader();
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
 
-    // Đọc file dưới dạng ArrayBuffer
-    reader.onload = async (event) => {
-      const arrayBuffer = event.target?.result as ArrayBuffer;
+        // Đọc file dưới dạng ArrayBuffer
+        reader.onload = async (event) => {
+          const arrayBuffer = event.target?.result as ArrayBuffer;
 
-      // Convert sang Base64 để lưu trữ
-      const base64 = btoa(
-        new Uint8Array(arrayBuffer).reduce(
-          (data, byte) => data + String.fromCharCode(byte),
-          ""
-        )
-      );
+          // Convert sang Base64 để lưu trữ
+          const base64 = btoa(
+            new Uint8Array(arrayBuffer).reduce(
+              (data, byte) => data + String.fromCharCode(byte),
+              ""
+            )
+          );
 
-      setFileContent(base64); // Lưu dữ liệu gốc dưới dạng base64
-      setFileName(file.name);
-      setFileType(file.type);
+          setFileContent(base64); // Lưu dữ liệu gốc dưới dạng base64
+          setFileName(file.name);
+          setFileType(file.type);
+        };
+
+        reader.readAsArrayBuffer(file);
+      }
     };
-
-    reader.readAsArrayBuffer(file);
-  }
-};
 
     const handleRemoveFile = () => {
       setFileContent(null);
@@ -577,7 +576,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               )}
 
               <div
-                className={`inline-block p-4 rounded-lg max-w-[800px] ${
+                className={`inline-block p-4 rounded-lg max-w-[800px] md:max-w-[200px] ${
                   message.role === "user"
                     ? "bg-white text-black border border-gray-300"
                     : "bg-gray-200 text-black"
@@ -585,6 +584,7 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 style={{
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
+                  width: "100%", // Add this line
                 }}
               >
                 <ReactMarkdown
@@ -593,7 +593,9 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   rehypePlugins={[rehypeKatex]}
                 >
                   {message.fileContent
-                    ? message.content.split("                                                                                                          \n\n**File:**")[0]
+                    ? message.content.split(
+                        "                                                                                                          \n\n**File:**"
+                      )[0]
                     : message.content}
                 </ReactMarkdown>
 
@@ -712,11 +714,23 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
 
         <style jsx global>{`
-          .custom-scrollbar {
-            /* Sử dụng overflow: auto để chỉ hiện scrollbar khi cần thiết */
+          custom-scrollbar {
             overflow: auto;
+            /* Prevent horizontal scroll */
+            overflow-x: hidden;
           }
 
+          /* Add these new rules */
+          .react-markdown pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-width: 100%;
+          }
+
+          .react-markdown code {
+            white-space: pre-wrap;
+            word-break: break-word;
+          }
           .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
             height: 6px;

@@ -131,10 +131,14 @@ export default function Home() {
     }
   };
 
-  const handleSelectChatSession = (session: any) => {
-    setSelectedChatSession(session);
-    setCurrentChatId(session.id);
-  };
+const handleSelectChatSession = (session: any) => {
+  setSelectedChatSession(session);
+  setCurrentChatId(session.id);
+  if (isMobile) {
+    setIsChatHistoryVisible(false);
+  }
+};
+
 
   return (
     <div className="h-screen p-6 bg-gray-100 relative overflow-clip">
