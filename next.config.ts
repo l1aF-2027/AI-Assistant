@@ -10,6 +10,19 @@ const config: NextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  images: {
+    domains: [
+      "cdn.pixabay.com",
+      "images.unsplash.com",
+      "raw.githubusercontent.com",
+    ],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
   headers: async () => [
     {
       source: "/(.*)",
